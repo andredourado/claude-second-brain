@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Second brain: carrega o contexto recente pro Claude Code na abertura.
+# Second brain: carrega o contexto recente para o Claude Code na abertura.
 #
 # Comportamento:
 #   - Se existir .claude-memory/_resume.md (gerado pelo /save), mostra só ele:

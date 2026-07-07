@@ -59,8 +59,8 @@ nonblank "$(section 'Como testar')" || fails+=("seção '## Como testar' ausente
 
 # 6. Estado: enum de UMA palavra logo após 'Estado:'. 'resolvida'/'concluída'
 # são apelidos de fechada (vocabulário natural em PT, validado pelo uso real).
-# Prosa de status colada NÃO casa, de propósito: o campo é enum pra máquina
-# ler; a história vai pro corpo / Desfecho.
+# Prosa de status colada NÃO casa, de propósito: o campo é enum para a máquina
+# ler; a história vai para o corpo / Desfecho.
 grep -qiE '^[*]{0,2}Estado:?[*]{0,2}[[:space:]]*(aberta|fechada|resolvida|conclu)' "$F" \
   || fails+=("linha 'Estado:' ausente ou não começa com aberta|fechada|resolvida|concluída (não use prosa de status aqui)")
 
@@ -75,7 +75,7 @@ fi
 dir="$(dirname "$F")"
 slug="$(basename "$F" .md)"
 if [ -f "$dir/MEMORY.md" ]; then
-  grep -q "$slug" "$dir/MEMORY.md" || fails+=("ponteiro pra '$slug' ausente no MEMORY.md")
+  grep -q "$slug" "$dir/MEMORY.md" || fails+=("ponteiro para '$slug' ausente no MEMORY.md")
 else
   fails+=("MEMORY.md não encontrado em $dir")
 fi

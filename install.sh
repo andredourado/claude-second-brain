@@ -60,11 +60,11 @@ GITIGNORE=".gitignore"
 
 # 6a. Detecta se .claude/ está sendo ignorado por algum gitignore externo
 # (global, ~/.config/git/ignore, etc). Se sim, precisa adicionar exceção
-# no .gitignore local, senão hooks/commands não vão pro git do projeto.
+# no .gitignore local, senão hooks/commands não vão para o git do projeto.
 CLAUDE_IGNORED_EXTERNAL=0
 if git rev-parse --git-dir >/dev/null 2>&1; then
   # check-ignore retorna 0 se ignorado. Rodamos contra um caminho dentro
-  # de .claude/ pra evitar falso negativo quando só o diretório é ignorado.
+  # de .claude/ para evitar falso negativo quando só o diretório é ignorado.
   if git check-ignore -q .claude/hooks/load-recent.sh 2>/dev/null; then
     CLAUDE_IGNORED_EXTERNAL=1
   fi
@@ -93,7 +93,7 @@ if [ -n "$ADD_BLOCK" ]; then
     printf '%s' "$ADD_BLOCK"
   } >> "$GITIGNORE"
   if [ "$CLAUDE_IGNORED_EXTERNAL" = "1" ]; then
-    echo "  ✓ .gitignore (exceção pra .claude/ + .claude-memory/)"
+    echo "  ✓ .gitignore (exceção para .claude/ + .claude-memory/)"
   else
     echo "  ✓ .gitignore (.claude-memory/ + settings.local.json)"
   fi
@@ -104,4 +104,4 @@ fi
 echo
 echo "Pronto. Próximos passos:"
 echo "  1. git add .claude/ .gitignore && git commit -m 'chore: instala o second brain'"
-echo "  2. Trabalhe normalmente e rode /save no fim da sessão pra gerar o diário"
+echo "  2. Trabalhe normalmente e rode /save no fim da sessão para gerar o diário"

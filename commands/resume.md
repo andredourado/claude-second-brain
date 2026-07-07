@@ -10,4 +10,4 @@ Com base nos arquivos em `.claude-memory/` (diários recentes) e em `CLAUDE.md` 
 4. O que estava pendente
 5. Qual o próximo passo lógico
 
-Seja direto, sem preâmbulo. Se faltar informação pra algum item, diga "sem dados" naquele bullet em vez de inventar.
+Seja direto, sem preâmbulo. Se faltar informação para algum item, diga "sem dados" naquele bullet em vez de inventar.

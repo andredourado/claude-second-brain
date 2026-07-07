@@ -2,9 +2,9 @@
 description: Registra um problema descoberto como task acionável (causa-raiz + o que achei + como resolver + como testar), validada por check executável
 ---
 
-Registra um problema que **fica pra depois** como uma **task acionável**, escrita agora, com o contexto vivo, pra uma sessão fria (ou eu daqui a 10 min) pegar pronta sem reinvestigar.
+Registra um problema que **fica para depois** como uma **task acionável**, escrita agora, com o contexto vivo, para uma sessão fria (ou eu daqui a 10 min) pegar pronta sem reinvestigar.
 
-**Por que este comando existe**: o defeito recorrente é registrar *o problema* mas não *o que exatamente foi encontrado* nem *como resolver*. O molde abaixo não conserta isso sozinho (dá pra preencher raso), por isso o passo do **check executável é obrigatório** e é o que dá dente ao comando.
+**Por que este comando existe**: o defeito recorrente é registrar *o problema* mas não *o que exatamente foi encontrado* nem *como resolver*. O molde abaixo não conserta isso sozinho (dá para preencher raso), por isso o passo do **check executável é obrigatório** e é o que dá dente ao comando.
 
 **Quando rodar:** no instante em que se decide que um problema não será resolvido nesta sessão. O usuário puxa o gatilho; eu posso sugerir "isso é candidato a `/write-task`" quando adio um conserto, mas quem decide é ele.
 
@@ -17,7 +17,7 @@ Na pasta de memória semântica do projeto, arquivo `task-<slug-curto>.md`, no f
 ```
 ---
 name: task-<slug-curto>
-description: <uma linha: o que está quebrado e onde, pra o recall achar>
+description: <uma linha: o que está quebrado e onde, para o recall achar>
 metadata:
   type: project
 ---

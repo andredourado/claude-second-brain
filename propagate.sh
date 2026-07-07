@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Propaga o tooling (hook + commands + check) pra todos os projetos adotantes.
+# Propaga o tooling (hook + commands + check) para todos os projetos adotantes.
 #
 # Adotante = qualquer diretório dentro de PROJECTS_DIR com
-# .claude/commands/save.md. Pra cada um: copia os arquivos canônicos que
+# .claude/commands/save.md. Para cada um: copia os arquivos canônicos que
 # mudaram e, salvo --no-commit, commita+pusha só esses arquivos, por nome.
 # Repos locais sem remote `origin` commitam mas não pusham.
 #

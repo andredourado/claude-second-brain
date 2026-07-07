@@ -1,10 +1,10 @@
-# Second brain pro Claude Code: memória persistente entre sessões
+# Second brain para o Claude Code: memória persistente entre sessões
 
 ## O problema
 
 O Claude Code não lembra de nada entre sessões. Na segunda-feira você passa uma hora decidindo com ele que a fila de jobs vai usar polling em vez de webhook, e por quê. Na quinta, numa sessão nova, ele sugere webhook de novo, com toda a confiança do mundo. Cada sessão começa do zero: as decisões, os becos sem saída já explorados, as pendências e o "porquê" de cada escolha evaporam quando a janela fecha.
 
-Este tutorial mostra como montar um "second brain" (um segundo cérebro): um sistema de memória persistente entre sessões, feito só de **arquivos markdown, bash e git**. Sem banco de dados, sem servidor, sem serviço externo, sem framework pra instalar. Uso esse sistema em produção em quase 20 projetos reais há meses.
+Este tutorial mostra como montar um "second brain" (um segundo cérebro): um sistema de memória persistente entre sessões, feito só de **arquivos markdown, bash e git**. Sem banco de dados, sem servidor, sem serviço externo, sem framework para instalar. Uso esse sistema em produção em quase 20 projetos reais há meses.
 
 O resultado prático: toda sessão nova do Claude Code abre já sabendo onde o projeto parou, o que foi decidido, o que está pendente e qual o próximo passo. Sem você digitar uma linha de contexto.
 
@@ -18,7 +18,7 @@ Todos os arquivos estão neste repositório e também colados inline no texto, n
 
 **2. Cada informação guardada no lugar com o custo certo.** Tudo que o Claude "sabe" numa sessão ocupa espaço na janela de contexto e compete pela atenção do modelo com a sua tarefa. Um sistema de memória ingênuo despeja tudo no contexto e piora o agente em vez de melhorar. Este sistema separa a memória em 3 camadas com custos diferentes (regra que vale sempre / fato de um tópico específico / registro do dia a dia), e cada camada só é carregada quando faz sentido. A Parte 2 explica as camadas em detalhe; é o conceito central do sistema.
 
-**3. O arquivo de instruções para de crescer sem controle.** O `CLAUDE.md` (arquivo de instruções que o Claude Code carrega inteiro em toda sessão) tende a virar depósito: cada sessão acrescenta "uma linhinha" e ninguém nunca remove nada. Um dos meus projetos chegou a 561 linhas assim, e cada sessão pagava o custo de ler tudo aquilo, relevante ou não. Aqui, o comando de fim de sessão (`/save`) faz curadoria ativa: avalia o que entra, o que deveria descer pra uma camada mais barata e o que apodreceu e deve sair.
+**3. O arquivo de instruções para de crescer sem controle.** O `CLAUDE.md` (arquivo de instruções que o Claude Code carrega inteiro em toda sessão) tende a virar depósito: cada sessão acrescenta "uma linhinha" e ninguém nunca remove nada. Um dos meus projetos chegou a 561 linhas assim, e cada sessão pagava o custo de ler tudo aquilo, relevante ou não. Aqui, o comando de fim de sessão (`/save`) faz curadoria ativa: avalia o que entra, o que deveria descer para uma camada mais barata e o que apodreceu e deve sair.
 
 **4. Problema adiado não vira investigação perdida.** Quando você descobre um bug mas decide resolver depois, o padrão de falha é anotar o sintoma ("export de CSV estoura timeout") e perder a investigação (qual arquivo, qual linha, o que já foi testado). Semanas depois, alguém reinvestiga tudo de novo. O comando `/write-task` registra o problema com a investigação completa, e um script de validação **recusa** registros rasos: sem evidência concreta e sem apontar onde corrigir, a task não é aceita.
 
@@ -26,11 +26,11 @@ Todos os arquivos estão neste repositório e também colados inline no texto, n
 
 **6. Incidente não perde urgência entre sessões.** Existe um padrão perigoso de LLM: entre uma sessão e outra, "23 vulnerabilidades críticas em aberto" vira "backlog de melhorias". O comando `/save-crisis` grava um banner de emergência no resumo da próxima sessão e proíbe explicitamente esse tipo de suavização.
 
-**7. A memória não alucina.** Regra inviolável embutida nos comandos: pra citar o conteúdo de qualquer arquivo, o Claude precisa ler o arquivo naquele momento, nunca deduzir pelo nome. E pendências antigas são re-verificadas contra o estado atual do código antes de entrar no resumo (o diário pode conter um erro registrado; o resumo não pode).
+**7. A memória não alucina.** Regra inviolável embutida nos comandos: para citar o conteúdo de qualquer arquivo, o Claude precisa ler o arquivo naquele momento, nunca deduzir pelo nome. E pendências antigas são re-verificadas contra o estado atual do código antes de entrar no resumo (o diário pode conter um erro registrado; o resumo não pode).
 
-**8. Instalação em um comando por projeto.** O sistema é uma pasta de arquivos copiáveis. Um script de bootstrap instala tudo num projeto novo; outro propaga atualizações pra todos os projetos que já adotaram.
+**8. Instalação em um comando por projeto.** O sistema é uma pasta de arquivos copiáveis. Um script de bootstrap instala tudo num projeto novo; outro propaga atualizações para todos os projetos que já adotaram.
 
-**9. Zero infraestrutura, zero aprisionamento.** É tudo markdown legível e bash curto. Se você abandonar o sistema amanhã, os arquivos continuam úteis pra ler com qualquer editor.
+**9. Zero infraestrutura, zero aprisionamento.** É tudo markdown legível e bash curto. Se você abandonar o sistema amanhã, os arquivos continuam úteis para ler com qualquer editor.
 
 ---
 
@@ -50,7 +50,7 @@ O sistema guarda cada informação em uma de três camadas, escolhida pelo padr�
 
 **Camada 2: a memória semântica (pasta `memory/`).** O Claude Code tem memória nativa por projeto: uma pasta de arquivos markdown (um fato por arquivo, com um índice `MEMORY.md`) que ele **injeta automaticamente no contexto só quando o assunto aparece na conversa**. É o lugar dos fatos duráveis que só importam num tópico específico: "o deploy do serviço X é `scp` + `ssh restart`", "o campo `status` dessa tabela tem 3 valores legados, cuidado", "a API do fornecedor Y limita a 100 req/min". Custo baixo: se a sessão não toca no assunto, o fato não gasta um token.
 
-**Camada 3: a memória temporal (pasta `.claude-memory/`).** Diários por dia de trabalho: o que foi feito, decidido, quebrado e adiado **em cada sessão**. Eventos com data, não regras. Essa camada quase não é carregada: ela existe pra alimentar um arquivo-síntese de 5 bullets (`_resume.md`) que é a única coisa injetada na abertura da sessão seguinte. Os diários ficam fora do git, só na sua máquina.
+**Camada 3: a memória temporal (pasta `.claude-memory/`).** Diários por dia de trabalho: o que foi feito, decidido, quebrado e adiado **em cada sessão**. Eventos com data, não regras. Essa camada quase não é carregada: ela existe para alimentar um arquivo-síntese de 5 bullets (`_resume.md`) que é a única coisa injetada na abertura da sessão seguinte. Os diários ficam fora do git, só na sua máquina.
 
 ### Conceito 3: a regra de fronteira (onde guardar cada fato)
 
@@ -61,10 +61,10 @@ Na hora de guardar qualquer informação, uma única pergunta decide a camada:
 | Exemplo de fato | Camada | Por quê |
 |---|---|---|
 | "Nunca rodar migration em produção sem backup" | Contrato (`CLAUDE.md`) | Vale em qualquer tarefa, sempre |
-| "O deploy do worker é `scp` pro host X + restart do systemd" | Memória semântica | Só importa quando alguém mexe no deploy |
-| "Hoje refatorei o parser e descobri que o campo `date` vem em 2 formatos" | Diário | Evento datado; o fato durável (os 2 formatos) pode ser promovido pra memória semântica |
+| "O deploy do worker é `scp` para o host X + restart do systemd" | Memória semântica | Só importa quando alguém mexe no deploy |
+| "Hoje refatorei o parser e descobri que o campo `date` vem em 2 formatos" | Diário | Evento datado; o fato durável (os 2 formatos) pode ser promovido para a memória semântica |
 
-Errar o destino tem custos assimétricos: mandar fato específico pro contrato incha o arquivo que toda sessão paga pra ler; mandar pra memória semântica no máximo custa esperar o assunto aparecer. Na dúvida, memória semântica.
+Errar o destino tem custos assimétricos: mandar fato específico para o contrato incha o arquivo que toda sessão paga para ler; mandar para a memória semântica no máximo custa esperar o assunto aparecer. Na dúvida, memória semântica.
 
 ---
 
@@ -77,7 +77,7 @@ projeto/
 │   │   └── load-recent.sh        # injeta o _resume.md na abertura de toda sessão
 │   ├── commands/
 │   │   ├── save.md               # /save: fecha a sessão (diário + curadoria + resumo)
-│   │   ├── save-crisis.md        # /save pra sessão de incidente
+│   │   ├── save-crisis.md        # /save para sessão de incidente
 │   │   ├── resume.md             # /resume: recap sob demanda
 │   │   └── write-task.md         # /write-task: registra problema adiado
 │   ├── write-task-check.sh       # valida a task; recusa registro raso
@@ -104,11 +104,11 @@ Em resumo: o Claude Code, sozinho, já te dá o contrato (`CLAUDE.md`) e a memó
 
 O ciclo de uma sessão de trabalho:
 
-1. **Você abre o Claude Code no projeto.** O hook `SessionStart` roda `load-recent.sh`, que imprime o `_resume.md` pro contexto. O Claude começa sabendo onde tudo parou.
+1. **Você abre o Claude Code no projeto.** O hook `SessionStart` roda `load-recent.sh`, que imprime o `_resume.md` para o contexto. O Claude começa sabendo onde tudo parou.
 2. **Você trabalha normalmente.** Se um problema for descoberto mas adiado, `/write-task` o registra com a investigação completa.
-3. **No fim da sessão, você roda `/save`.** Ele escreve o diário do dia, decide o que da sessão merece virar memória durável (e em qual camada, pela regra de fronteira), fecha tasks que a sessão resolveu e reescreve o `_resume.md` pra próxima sessão.
+3. **No fim da sessão, você roda `/save`.** Ele escreve o diário do dia, decide o que da sessão merece virar memória durável (e em qual camada, pela regra de fronteira), fecha tasks que a sessão resolveu e reescreve o `_resume.md` para a próxima sessão.
 
-Um detalhe deliberado: o `/save` é **manual**. Dava pra automatizar com um hook de fim de sessão, e eu não recomendo. O ato consciente de fechar a sessão é parte do valor (você decide se ela mereceu registro), e a escolha entre `/save` e `/save-crisis` carrega um sinal que nenhuma automação captura: se o projeto está em modo normal ou em modo emergência.
+Um detalhe deliberado: o `/save` é **manual**. Dava para automatizar com um hook de fim de sessão, e eu não recomendo. O ato consciente de fechar a sessão é parte do valor (você decide se ela mereceu registro), e a escolha entre `/save` e `/save-crisis` carrega um sinal que nenhuma automação captura: se o projeto está em modo normal ou em modo emergência.
 
 ---
 
@@ -118,7 +118,7 @@ Pré-requisitos: [Claude Code](https://claude.com/claude-code) instalado, bash e
 
 Atalho: se você clonou este repositório, `./install.sh /caminho/do/seu/projeto` executa os passos 1 a 6 de uma vez (e já copia os arquivos do passo 9). Ainda assim vale ler o passo a passo: ele explica o que cada peça faz e por quê.
 
-Os passos 1 a 7 montam o núcleo. Os passos 8 a 10 são extensões: deixe pra depois, adote quando sentir a dor específica que cada uma resolve.
+Os passos 1 a 7 montam o núcleo. Os passos 8 a 10 são extensões: deixe para depois, adote quando sentir a dor específica que cada uma resolve.
 
 ### Passo 1: criar a pasta de diários, fora do git
 
@@ -139,7 +139,7 @@ Crie `.claude/hooks/load-recent.sh` com o conteúdo abaixo e dê permissão de e
 
 ```bash
 #!/usr/bin/env bash
-# Second brain: carrega o contexto recente pro Claude Code na abertura.
+# Second brain: carrega o contexto recente para o Claude Code na abertura.
 #
 # Comportamento:
 #   - Se existir .claude-memory/_resume.md (gerado pelo /save), mostra só ele:
@@ -203,7 +203,7 @@ O Claude Code descobre os hooks pelo `.claude/settings.json` do projeto. Crie o 
 }
 ```
 
-**Teste:** crie um diário de mentira (`echo "- teste do hook" > .claude-memory/2020-01-01.md`, com data de hoje no nome do arquivo pra cair na janela de 48h) e abra uma sessão nova do Claude Code no projeto. Pergunte "o que apareceu no seu contexto sobre diário?". Ele deve citar o conteúdo. Apague o arquivo de teste depois.
+**Teste:** crie um diário de mentira (`echo "- teste do hook" > .claude-memory/2020-01-01.md`, com data de hoje no nome do arquivo para cair na janela de 48h) e abra uma sessão nova do Claude Code no projeto. Pergunte "o que apareceu no seu contexto sobre diário?". Ele deve citar o conteúdo. Apague o arquivo de teste depois.
 
 ### Passo 4: criar o comando `/save` (o coração do sistema)
 
@@ -228,7 +228,7 @@ Salva um resumo desta sessão em `.claude-memory/YYYY-MM-DD.md` (use a data de h
 - Mudanças de direção (algo discutido que invalidou abordagem anterior)
 - Aprendizados não-óbvios sobre o sistema/dados que custaram tempo
 
-Aplique o filtro **"isso vai importar daqui a 1 semana?"** a cada item. Se sim, inclua. Decida sozinho, não pergunte ao usuário "vale salvar isso?". Errar pra mais é melhor que pra menos.
+Aplique o filtro **"isso vai importar daqui a 1 semana?"** a cada item. Se sim, inclua. Decida sozinho, não pergunte ao usuário "vale salvar isso?". Errar para mais é melhor que para menos.
 
 **Regra anti-alucinação (inviolável)**: se for citar, contrastar ou afirmar algo sobre o conteúdo de outro arquivo (CLAUDE.md, memória semântica, schema, código, config), **leia o arquivo com `Read` antes** de escrever a afirmação. Nunca inferir conteúdo a partir do nome do arquivo. Se não conseguiu/quis ler, não cite. Aspas só com o texto exato do arquivo, copiado de uma leitura desta sessão.
 
@@ -239,18 +239,18 @@ Requisitos do diário:
   - **Feito**: o que foi concluído nesta sessão
   - **Decisões**: decisões técnicas ou de produto tomadas (com o "porquê")
   - **Problemas**: bugs encontrados ou dificuldades
-  - **Pendente**: o que ficou em aberto pra próxima sessão
+  - **Pendente**: o que ficou em aberto para a próxima sessão
 
 Se já existir arquivo para hoje, faça merge inteligente: integre os pontos novos sem duplicar o que já estava lá.
 
 **Pass obrigatório: triagem das camadas duráveis**. Existem duas camadas que sobrevivem entre sessões: o **CLAUDE.md** (sempre-carregado, com precedência, caro) e a **memória semântica** (a pasta de memória nativa do projeto, injetada automaticamente quando o tópico aparece). A **regra de fronteira** decide o destino: *o fato precisa estar no contexto em toda sessão, ou só quando o assunto dele aparece?* Toda sessão → CLAUDE.md; só quando aparece → memória. A cada `/save`, faça os passos:
 
-1. **Há algo significativo desta sessão pra registrar?** Regra de trabalho nova, decisão de arquitetura, restrição, preferência do usuário, schema/procedimento de subsistema, gotcha localizado, referência externa estável. Se sim, **decida o destino pela regra de fronteira** e proponha a edição:
-   - **Contrato (CLAUDE.md)**: o que molda comportamento independente do tópico (regra inviolável, autorização durável, preferência sempre-aplicável). Local se específico ao projeto, global (`~/.claude/CLAUDE.md`) se vale pra todos os projetos.
+1. **Há algo significativo desta sessão para registrar?** Regra de trabalho nova, decisão de arquitetura, restrição, preferência do usuário, schema/procedimento de subsistema, gotcha localizado, referência externa estável. Se sim, **decida o destino pela regra de fronteira** e proponha a edição:
+   - **Contrato (CLAUDE.md)**: o que molda comportamento independente do tópico (regra inviolável, autorização durável, preferência sempre-aplicável). Local se específico ao projeto, global (`~/.claude/CLAUDE.md`) se vale para todos os projetos.
    - **Memória semântica**: o que só importa quando seu tópico/arquivo/pessoa aparece (schema de subsistema, procedimento de deploy, gotcha localizado, referência). Escrever no formato nativo do Claude Code (um fato por arquivo + linha no índice `MEMORY.md`); não reinventar formato.
    - Aplica a regra anti-alucinação: leia o trecho-alvo antes de editar. Se nada significativo aconteceu, diga isso e não force entrada.
-2. **O contrato ainda cabe?** CLAUDE.md é caro (carrega inteiro, toda sessão). Antes de acrescentar, avalie o tamanho atual: se já está grande, a primeira pergunta é se a entrada nem deveria ir pro contrato. Boa parte do que incha um CLAUDE.md é específico-por-tópico que pertence à memória. Proponha **mover pra memória** o que é recuperável-sob-demanda, e **podar** o obsoleto/redundante/superado, não só acrescentar no fim. Objetivo: contrato enxuto e sempre-verdadeiro. Limpeza maior, sinalize ao usuário.
-3. **Ainda é verdade?** Fato errado numa camada durável é armadilha pro eu-futuro, que confia nele *porque* está salvo. Se a sessão tocou uma área cuja estrutura o CLAUDE.md (ou uma memória) descreve (qual módulo faz o quê, invariantes, topologia), **re-verifique por amostragem** os trechos relevantes contra o código real (Read/grep, não memória) e corrija o que apodreceu. Não é varredura cega a cada save, só os fatos que a sessão tocou.
+2. **O contrato ainda cabe?** CLAUDE.md é caro (carrega inteiro, toda sessão). Antes de acrescentar, avalie o tamanho atual: se já está grande, a primeira pergunta é se a entrada nem deveria ir para o contrato. Boa parte do que incha um CLAUDE.md é específico-por-tópico que pertence à memória. Proponha **mover para a memória** o que é recuperável-sob-demanda, e **podar** o obsoleto/redundante/superado, não só acrescentar no fim. Objetivo: contrato enxuto e sempre-verdadeiro. Limpeza maior, sinalize ao usuário.
+3. **Ainda é verdade?** Fato errado numa camada durável é armadilha para o eu-futuro, que confia nele *porque* está salvo. Se a sessão tocou uma área cuja estrutura o CLAUDE.md (ou uma memória) descreve (qual módulo faz o quê, invariantes, topologia), **re-verifique por amostragem** os trechos relevantes contra o código real (Read/grep, não memória) e corrija o que apodreceu. Não é varredura cega a cada save, só os fatos que a sessão tocou.
 
 CLAUDE.md é versionado (diferente do diário): edições nele seguem a regra normal de commit do projeto.
 
@@ -259,13 +259,13 @@ CLAUDE.md é versionado (diferente do diário): edições nele seguem a regra no
 1. Edite a task: `**Estado:** fechada` + uma linha de como foi (commit/arquivo).
 2. Grave `**Desfecho:**` com **default pessimista**: `pela-task` só se a sessão que resolveu **usou** o `## Como resolver`/`## O que achei` da task e bateu; na menor dúvida, `reinvestiguei`; `obsoleta` se deixou de importar sem ser resolvida. Meia linha de evidência (o que da task foi usado, ou o que faltou).
 
-Escopo enxuto de propósito: não interrogar sobre cada task aberta, não fechar o que só *parece* resolvido. **Não fechar nada é o caso comum** e está ok. Liste no resumo final quais tasks fechou e com qual desfecho, pra o usuário poder vetar. Aplica a regra anti-alucinação: leia a task antes de reescrever.
+Escopo enxuto de propósito: não interrogar sobre cada task aberta, não fechar o que só *parece* resolvido. **Não fechar nada é o caso comum** e está ok. Liste no resumo final quais tasks fechou e com qual desfecho, para o usuário poder vetar. Aplica a regra anti-alucinação: leia a task antes de reescrever.
 
 **Pass final: `_resume.md`**. Gere/sobrescreva `.claude-memory/_resume.md` com uma síntese de exatamente 5 bullets, que é o que o hook `SessionStart` mostra quando o usuário abre uma nova sessão. Use os diários da janela recente (últimas ~48h em `.claude-memory/`) + `CLAUDE.md` como fontes. Estrutura:
 
 ```
 1. **Onde estamos**: estado atual do projeto numa frase
-2. **Regras invioláveis (do CLAUDE.md)**: se o CLAUDE.md do projeto tem seção de regras invioláveis ("Regras pétreas", "Invioláveis", "Leia primeiro"), reproduzir lista numerada curta (1 linha por regra). NÃO inventar regra que não está no CLAUDE.md. Se o projeto não tem essa seção, omita esse bullet e desça os outros pra preencher 5 totais.
+2. **Regras invioláveis (do CLAUDE.md)**: se o CLAUDE.md do projeto tem seção de regras invioláveis ("Regras pétreas", "Invioláveis", "Leia primeiro"), reproduzir lista numerada curta (1 linha por regra). NÃO inventar regra que não está no CLAUDE.md. Se o projeto não tem essa seção, omita esse bullet e desça os outros para preencher 5 totais.
 3. **Últimas sessões**: o que foi feito recentemente
 4. **Decisões e notas efêmeras**: contexto da semana, planos provisórios, observações que ainda não viraram regra. **Não confundir com o bullet 2**: o que está aqui é hipótese em avaliação, não restrição inviolável.
 5. **Pendente + próximo passo lógico**: a próxima ação concreta primeiro, depois a lista de pendências
@@ -281,7 +281,7 @@ Esse arquivo substitui o que o hook mostra no SessionStart, sobrescrito a cada `
 - Diários antigos do incidente ficam intactos: histórico não se reescreve. Só o `_resume.md` muda de temperatura.
 - Se o incidente **não** está fechado de verdade, o usuário deveria ter rodado `/save-crisis`. Não compense reaquecendo o resume; confie no comando que ele escolheu.
 
-**Validação obrigatória ao montar o `_resume.md`**: se um diário antigo lista "pendência" ou "conflito" que cita arquivos específicos (ex.: "CLAUDE.md diz X mas a memória diz Y"), **leia os arquivos citados no estado atual** antes de copiar pro resume. Se já não bate (arquivo mudou, conflito resolvido, ou nunca existiu como descrito), **descarte a alegação**: não copie pro resume mesmo que esteja no diário. Diários são imutáveis e podem conter erro registrado; o `_resume.md` reflete o estado atual verificado.
+**Validação obrigatória ao montar o `_resume.md`**: se um diário antigo lista "pendência" ou "conflito" que cita arquivos específicos (ex.: "CLAUDE.md diz X mas a memória diz Y"), **leia os arquivos citados no estado atual** antes de copiar para o resume. Se já não bate (arquivo mudou, conflito resolvido, ou nunca existiu como descrito), **descarte a alegação**: não copie para o resume mesmo que esteja no diário. Diários são imutáveis e podem conter erro registrado; o `_resume.md` reflete o estado atual verificado.
 
 Após salvar:
 1. Mostre os caminhos: diário do dia, `_resume.md`, e qualquer edição proposta/aplicada no `CLAUDE.md`.
@@ -291,18 +291,18 @@ Após salvar:
 É longo porque quase tudo ali é **regra de comportamento**, não formato. Em resumo, o `/save` faz 4 coisas, nesta ordem:
 
 1. **Escreve o diário do dia** (máximo 15 bullets, seções Feito / Decisões / Problemas / Pendente), filtrando pelo teste "isso importa daqui a 1 semana?".
-2. **Tria o que é durável**: promove fatos da sessão pra camada certa (contrato ou memória semântica, pela regra de fronteira) e aproveita pra podar o `CLAUDE.md` do que apodreceu.
+2. **Tria o que é durável**: promove fatos da sessão para a camada certa (contrato ou memória semântica, pela regra de fronteira) e aproveita para podar o `CLAUDE.md` do que apodreceu.
 3. **Fecha tasks que a sessão resolveu** (se você adotar o `/write-task` do passo 9).
 4. **Reescreve o `_resume.md`**, os 5 bullets que a próxima sessão vai receber na abertura.
 
-Pra dar concretude, um `_resume.md` real tem essa cara:
+Para dar concretude, um `_resume.md` real tem essa cara:
 
 ```markdown
 1. **Onde estamos**: API de pagamentos com o checkout novo em beta; falta migrar os webhooks legados.
 2. **Regras invioláveis (do CLAUDE.md)**: 1) nunca rodar migration em produção sem backup; 2) todo endpoint novo exige teste de contrato.
 3. **Últimas sessões**: implementado retry com backoff nos webhooks (12/03); corrigido o timeout do gateway (11/03).
 4. **Decisões e notas efêmeras**: avaliando trocar a fila por SQS; sem decisão ainda.
-5. **Pendente + próximo passo**: migrar os 3 webhooks legados pro handler novo; depois remover a feature flag do checkout.
+5. **Pendente + próximo passo**: migrar os 3 webhooks legados para o handler novo; depois remover a feature flag do checkout.
 ```
 
 E um diário de um dia:
@@ -320,14 +320,14 @@ E um diário de um dia:
 - Sandbox do gateway devolve 500 intermitente; não reproduz em produção
 
 ## Pendente
-- Migrar os 3 webhooks legados pro handler novo
+- Migrar os 3 webhooks legados para o handler novo
 ```
 
-**Teste:** trabalhe uma sessão normal (ou simule: peça pro Claude fazer qualquer mudança pequena), rode `/save`, e confira os dois arquivos gerados em `.claude-memory/`. Depois abra uma sessão nova: o resumo deve aparecer logo no início, e o Claude deve responder "o que estávamos fazendo?" sem você explicar nada.
+**Teste:** trabalhe uma sessão normal (ou simule: peça para o Claude fazer qualquer mudança pequena), rode `/save`, e confira os dois arquivos gerados em `.claude-memory/`. Depois abra uma sessão nova: o resumo deve aparecer logo no início, e o Claude deve responder "o que estávamos fazendo?" sem você explicar nada.
 
 ### Passo 5: criar o comando `/resume`
 
-Recap sob demanda, pra quando você quer re-situar no meio de uma sessão. Crie `.claude/commands/resume.md`:
+Recap sob demanda, para quando você quer re-situar no meio de uma sessão. Crie `.claude/commands/resume.md`:
 
 ```markdown
 ---
@@ -342,7 +342,7 @@ Com base nos arquivos em `.claude-memory/` (diários recentes) e em `CLAUDE.md` 
 4. O que estava pendente
 5. Qual o próximo passo lógico
 
-Seja direto, sem preâmbulo. Se faltar informação pra algum item, diga "sem dados" naquele bullet em vez de inventar.
+Seja direto, sem preâmbulo. Se faltar informação para algum item, diga "sem dados" naquele bullet em vez de inventar.
 ```
 
 ### Passo 6: criar o comando `/save-crisis`
@@ -353,12 +353,12 @@ Crie `.claude/commands/save-crisis.md`:
 
 ````markdown
 ---
-description: /save pra sessão de incidente/crise/auditoria; preserva o tom de urgência no _resume.md
+description: /save para sessão de incidente/crise/auditoria; preserva o tom de urgência no _resume.md
 ---
 
 Use **em vez de** `/save` quando a sessão fecha com **incidente / auditoria com findings críticos / vazamento em produção** em aberto. A próxima sessão precisa abrir tratando como emergência, não como sprint.
 
-Faz tudo que o `/save` faz (mesmas regras de diário, anti-alucinação, curadoria do CLAUDE.md), com **duas diferenças**. O sinal de crise vive **só no `_resume.md`** (o banner abaixo): é ele que a próxima sessão lê e que o `/save` normal detecta pra voltar ao tom de rotina.
+Faz tudo que o `/save` faz (mesmas regras de diário, anti-alucinação, curadoria do CLAUDE.md), com **duas diferenças**. O sinal de crise vive **só no `_resume.md`** (o banner abaixo): é ele que a próxima sessão lê e que o `/save` normal detecta para voltar ao tom de rotina.
 
 ## 1. `_resume.md` abre com bloco de urgência
 
@@ -370,7 +370,7 @@ Antes dos 5 bullets padrão, começa com:
 > Natureza: <uma frase>
 > Impacto: <quem/o quê está exposto>
 > Status: <N fechados / M abertos>
-> Última ação: <o que a sessão anterior fez, com pointer pro diário>
+> Última ação: <o que a sessão anterior fez, com pointer para o diário>
 >
 > Bugs adjacentes da mesma família **são da mesma urgência**: não viram "rodada futura", "polimento" ou "backlog". Se afeta N itens e fechamos M < N, os restantes seguem críticos.
 ```
@@ -381,7 +381,7 @@ Os 5 bullets normais seguem **depois** do bloco. No bullet de Pendente, listar *
 
 Ao escrever Pendente (do diário e do `_resume.md`):
 - **Não** consolidar findings críticos em síntese vaga ("vários itens de polimento", "backlog de cleanup").
-- **Não** reordenar itens da família do incidente pra depois de polimento. Manter ordem por severidade.
+- **Não** reordenar itens da família do incidente para depois de polimento. Manter ordem por severidade.
 - **Não** marcar "concluído" o que foi mitigado parcialmente: usar "mitigação parcial: X feito, Y falta".
 
 ## Como o tom volta ao normal
@@ -399,7 +399,7 @@ Igual ao `/save`:
 
 A mecânica está pronta. O que falta é hábito, e é um só: **no fim de toda sessão substantiva, rode `/save`** (regra prática: 3 ou mais mudanças significativas, ou uma decisão de arquitetura, ou mais de 30 minutos de trabalho). Sessão trivial não precisa.
 
-Vale adicionar uma linha no `CLAUDE.md` do projeto pedindo pro Claude **sugerir** o `/save` no fim de sessões substantivas, mas a decisão de rodar é sua, pelo motivo do fim da Parte 3.
+Vale adicionar uma linha no `CLAUDE.md` do projeto pedindo para o Claude **sugerir** o `/save` no fim de sessões substantivas, mas a decisão de rodar é sua, pelo motivo do fim da Parte 3.
 
 **Núcleo completo.** Use por 2 ou 3 semanas antes de considerar as extensões abaixo.
 
@@ -424,9 +424,9 @@ Crie `.claude/commands/write-task.md`:
 description: Registra um problema descoberto como task acionável (causa-raiz + o que achei + como resolver + como testar), validada por check executável
 ---
 
-Registra um problema que **fica pra depois** como uma **task acionável**, escrita agora, com o contexto vivo, pra uma sessão fria (ou eu daqui a 10 min) pegar pronta sem reinvestigar.
+Registra um problema que **fica para depois** como uma **task acionável**, escrita agora, com o contexto vivo, para uma sessão fria (ou eu daqui a 10 min) pegar pronta sem reinvestigar.
 
-**Por que este comando existe**: o defeito recorrente é registrar *o problema* mas não *o que exatamente foi encontrado* nem *como resolver*. O molde abaixo não conserta isso sozinho (dá pra preencher raso), por isso o passo do **check executável é obrigatório** e é o que dá dente ao comando.
+**Por que este comando existe**: o defeito recorrente é registrar *o problema* mas não *o que exatamente foi encontrado* nem *como resolver*. O molde abaixo não conserta isso sozinho (dá para preencher raso), por isso o passo do **check executável é obrigatório** e é o que dá dente ao comando.
 
 **Quando rodar:** no instante em que se decide que um problema não será resolvido nesta sessão. O usuário puxa o gatilho; eu posso sugerir "isso é candidato a `/write-task`" quando adio um conserto, mas quem decide é ele.
 
@@ -439,7 +439,7 @@ Na pasta de memória semântica do projeto, arquivo `task-<slug-curto>.md`, no f
 ```
 ---
 name: task-<slug-curto>
-description: <uma linha: o que está quebrado e onde, pra o recall achar>
+description: <uma linha: o que está quebrado e onde, para o recall achar>
 metadata:
   type: project
 ---
@@ -555,8 +555,8 @@ nonblank "$(section 'Como testar')" || fails+=("seção '## Como testar' ausente
 
 # 6. Estado: enum de UMA palavra logo após 'Estado:'. 'resolvida'/'concluída'
 # são apelidos de fechada (vocabulário natural em PT, validado pelo uso real).
-# Prosa de status colada NÃO casa, de propósito: o campo é enum pra máquina
-# ler; a história vai pro corpo / Desfecho.
+# Prosa de status colada NÃO casa, de propósito: o campo é enum para a máquina
+# ler; a história vai para o corpo / Desfecho.
 grep -qiE '^[*]{0,2}Estado:?[*]{0,2}[[:space:]]*(aberta|fechada|resolvida|conclu)' "$F" \
   || fails+=("linha 'Estado:' ausente ou não começa com aberta|fechada|resolvida|concluída (não use prosa de status aqui)")
 
@@ -571,7 +571,7 @@ fi
 dir="$(dirname "$F")"
 slug="$(basename "$F" .md)"
 if [ -f "$dir/MEMORY.md" ]; then
-  grep -q "$slug" "$dir/MEMORY.md" || fails+=("ponteiro pra '$slug' ausente no MEMORY.md")
+  grep -q "$slug" "$dir/MEMORY.md" || fails+=("ponteiro para '$slug' ausente no MEMORY.md")
 else
   fails+=("MEMORY.md não encontrado em $dir")
 fi
@@ -615,16 +615,16 @@ deve completar abaixo de 30s e o arquivo deve abrir com as 52k linhas.
 **Estado:** aberta
 ```
 
-Sobre a métrica de `Desfecho`: a taxa de sucesso do sistema é `pela-task / (pela-task + reinvestiguei)`. Existe um 4º valor, `retroativo`, só pra fechar task antiga de antes da métrica existir sem inventar um sucesso que ninguém mediu (conta como fechada, fica fora da taxa). Um dado do mundo real: na primeira medição que fiz sobre 18 tasks, 11 estavam fora do protocolo (campo `Estado` ausente ou preenchido com prosa). O obstáculo não era falta de métrica, era aderência ao próprio protocolo. Por isso o check aceita sinônimos naturais (`resolvida`, `concluída`) em vez de brigar com o vocabulário que o uso real produz, e rejeita prosa de status, que nenhum script consegue agregar.
+Sobre a métrica de `Desfecho`: a taxa de sucesso do sistema é `pela-task / (pela-task + reinvestiguei)`. Existe um 4º valor, `retroativo`, só para fechar task antiga de antes da métrica existir sem inventar um sucesso que ninguém mediu (conta como fechada, fica fora da taxa). Um dado do mundo real: na primeira medição que fiz sobre 18 tasks, 11 estavam fora do protocolo (campo `Estado` ausente ou preenchido com prosa). O obstáculo não era falta de métrica, era aderência ao próprio protocolo. Por isso o check aceita sinônimos naturais (`resolvida`, `concluída`) em vez de brigar com o vocabulário que o uso real produz, e rejeita prosa de status, que nenhum script consegue agregar.
 
 ### Passo 10 (extensão): instalar em vários projetos
 
 Quando o sistema estiver rodando bem num projeto, os dois scripts deste repositório resolvem a escala:
 
-- **`install.sh`** (instalação one-shot): `./install.sh /caminho/do/projeto` copia hook, commands e o check pro `.claude/` do projeto-alvo, cria o `settings.json` se não existir (se existir, avisa pra você fundir na mão em vez de sobrescrever), cria `.claude-memory/` e ajusta o `.gitignore`. Ele já trata um caso não-óbvio: se um gitignore global da sua máquina ignora `.claude/`, acrescenta a exceção (`!.claude/` e `!.claude/**`) no `.gitignore` local, senão hooks e commands nunca entram no git do projeto. Um alias no shell deixa a adoção a um comando de distância.
+- **`install.sh`** (instalação one-shot): `./install.sh /caminho/do/projeto` copia hook, commands e o check para o `.claude/` do projeto-alvo, cria o `settings.json` se não existir (se existir, avisa para você fundir na mão em vez de sobrescrever), cria `.claude-memory/` e ajusta o `.gitignore`. Ele já trata um caso não-óbvio: se um gitignore global da sua máquina ignora `.claude/`, acrescenta a exceção (`!.claude/` e `!.claude/**`) no `.gitignore` local, senão hooks e commands nunca entram no git do projeto. Um alias no shell deixa a adoção a um comando de distância.
 - **`propagate.sh`** (atualização de quem já adotou): descobre os projetos adotantes **varrendo** um diretório de projetos (variável `PROJECTS_DIR`; default: o diretório pai deste repositório), nunca por lista fixa no script, que apodrece. Compara cada arquivo do tooling com a cópia instalada, copia só o que mudou e commita por projeto, só os arquivos propagados. `--dry-run` mostra as diferenças sem tocar em nada; `--no-commit` só copia.
 
-No repositório do tooling em si, faça a instância local usar **simlinks** de `.claude/commands/` pros arquivos-fonte: editar o comando e testá-lo viram a mesma ação.
+No repositório do tooling em si, faça a instância local usar **simlinks** de `.claude/commands/` para os arquivos-fonte: editar o comando e testá-lo viram a mesma ação.
 
 ---
 
@@ -635,12 +635,12 @@ Tão importante quanto a receita é a lista do que **não** repetir. Cada peça 
 | Peça morta | O que era | Por que morreu |
 |---|---|---|
 | Agregação entre projetos | Diários de todos os projetos sincronizados num repositório central | Nenhum leitor real. O ganho vem do resumo injetado na abertura da sessão, não de revisitar histórico. Em meses de uso, a revisita simplesmente não acontecia |
-| Tags temáticas nos diários | Frontmatter com tags pra permitir busca cruzada por tema | O consumidor das tags era a agregação acima; morta ela, as tags viraram custo de escrita puro |
+| Tags temáticas nos diários | Frontmatter com tags para permitir busca cruzada por tema | O consumidor das tags era a agregação acima; morta ela, as tags viraram custo de escrita puro |
 | Arquivo central de decisões | Um `decisions.md` com as decisões de todos os projetos | Redundante: tudo que valia a pena já vivia nos `CLAUDE.md` (do projeto ou global). Camada nova só se justifica se as existentes não cobrem |
 | Trava de edição em arquivo "decidido" | Hook que bloqueava editar arquivo coberto por uma decisão registrada, pedindo confirmação | Inviável no uso: fricção a cada edição legítima, e em semanas nunca interceptou um erro real. Proteger decisão é papel de check executável no repositório do trabalho (teste, lint, CI), não do tooling de memória |
 | Memória semântica caseira | A camada do passo 8, versão própria, antes do recall nativo do Claude Code existir | Sem um mecanismo que injetasse os arquivos automaticamente, ninguém os lia. Reativada só quando a leitura automática passou a existir |
 
-Os princípios que essas mortes ensinam, e que valem pra qualquer sistema de memória de agente:
+Os princípios que essas mortes ensinam, e que valem para qualquer sistema de memória de agente:
 
 - **Toda peça precisa provar que tem leitor.** Não "seria útil se alguém lesse", mas "foi lido, quando, com qual efeito". Aposta nova entra com critério de morte e data de revisão.
 - **Concisão é o produto.** O valor vem do tamanho e do foco do que é injetado no contexto, não do volume acumulado em disco. Cada expansão precisa se pagar em atenção.
@@ -663,7 +663,7 @@ rm .claude/commands/save.md .claude/commands/save-crisis.md \
 rm .claude/write-task-check.sh
 ```
 
-**2. Desregistre o hook.** Abra `.claude/settings.json` e remova o bloco `SessionStart` que aponta pro `load-recent.sh` (adicionado no passo 3). Se o arquivo foi criado por este tutorial e não contém mais nada, pode apagar o arquivo inteiro.
+**2. Desregistre o hook.** Abra `.claude/settings.json` e remova o bloco `SessionStart` que aponta para o `load-recent.sh` (adicionado no passo 3). Se o arquivo foi criado por este tutorial e não contém mais nada, pode apagar o arquivo inteiro.
 
 **3. Limpe o `.gitignore`** (opcional): remova a linha `.claude-memory/`. Deixar não quebra nada.
 

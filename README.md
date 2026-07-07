@@ -1,4 +1,4 @@
-# Second brain pro Claude Code
+# Second brain para o Claude Code
 
 Memória persistente entre sessões do Claude Code, feita de **markdown, bash e git**. Sem banco de dados, sem servidor, sem dependência além do próprio Claude Code. Em uso em produção em quase 20 projetos reais.
 
@@ -7,7 +7,7 @@ O problema que resolve: o Claude Code não lembra de nada entre sessões. Decis�
 ## O que você ganha
 
 - **Fim do cold start**: um resumo de 5 bullets é injetado automaticamente na abertura de toda sessão.
-- **Memória no lugar certo**: 3 camadas com custos diferentes (regras sempre carregadas / fatos por tópico sob demanda / diários quase nunca carregados), pra memória não roubar atenção da tarefa.
+- **Memória no lugar certo**: 3 camadas com custos diferentes (regras sempre carregadas / fatos por tópico sob demanda / diários quase nunca carregados), para a memória não roubar atenção da tarefa.
 - **`CLAUDE.md` sob controle**: o `/save` faz curadoria ativa em vez de só acumular linhas.
 - **Problema adiado sem perder a investigação**: `/write-task` registra causa-raiz + evidências + onde corrigir, e um check executável recusa registro raso.
 - **Incidente não vira "backlog"**: `/save-crisis` preserva a urgência entre sessões.
@@ -25,7 +25,7 @@ cd claude-second-brain
 
 O script cria `.claude/hooks/load-recent.sh` (hook de abertura), os comandos `/save`, `/save-crisis`, `/resume` e `/write-task`, o check `write-task-check.sh`, o `settings.json` (se não existir) e a pasta de diários `.claude-memory/` (fora do git). Depois é só trabalhar e rodar `/save` no fim das sessões.
 
-Pra entender o que cada peça faz (ou montar na mão, sem clonar), siga o **[TUTORIAL.md](TUTORIAL.md)**: os ganhos em detalhe, os 3 conceitos por trás do design, o passo a passo completo, o que é padrão do Claude Code vs o que o sistema adiciona, como remover, e a lista do que foi construído, medido e cortado.
+Para entender o que cada peça faz (ou montar na mão, sem clonar), siga o **[TUTORIAL.md](TUTORIAL.md)**: os ganhos em detalhe, os 3 conceitos por trás do design, o passo a passo completo, o que é padrão do Claude Code vs o que o sistema adiciona, como remover, e a lista do que foi construído, medido e cortado.
 
 ## Estrutura
 
@@ -33,12 +33,12 @@ Pra entender o que cada peça faz (ou montar na mão, sem clonar), siga o **[TUT
 claude-second-brain/
 ├── TUTORIAL.md               # o tutorial completo (comece por ele)
 ├── install.sh                # instala num projeto (one-shot)
-├── propagate.sh              # propaga updates pra projetos que já adotaram
+├── propagate.sh              # propaga updates para projetos que já adotaram
 ├── hooks/
 │   └── load-recent.sh        # SessionStart: injeta o resumo no contexto
 ├── commands/
 │   ├── save.md               # /save: diário + curadoria + resumo (o coração)
-│   ├── save-crisis.md        # /save pra sessão de incidente
+│   ├── save-crisis.md        # /save para sessão de incidente
 │   ├── resume.md             # /resume: recap sob demanda
 │   └── write-task.md         # /write-task: registra problema adiado
 ├── write-task-check.sh       # valida a task; recusa registro raso
@@ -51,7 +51,7 @@ claude-second-brain/
 |---|---|
 | **Início** | O hook injeta o `_resume.md` (5 bullets) no contexto |
 | **Durante** | Trabalho normal; problema adiado vira `/write-task` |
-| **Fim** | `/save`: diário do dia + triagem do que é durável + resumo pra próxima sessão |
+| **Fim** | `/save`: diário do dia + triagem do que é durável + resumo para a próxima sessão |
 
 ## Como remover
 
