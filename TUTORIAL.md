@@ -114,7 +114,7 @@ Um detalhe deliberado: o `/save` é **manual**. Dava para automatizar com um hoo
 
 ## Parte 4: passo a passo
 
-Pré-requisitos: [Claude Code](https://claude.com/claude-code) instalado, bash e git. Tempo: uns 15 minutos.
+Pré-requisitos: [Claude Code](https://claude.com/claude-code) instalado, bash e git. Funciona em qualquer ambiente onde o Claude Code roda com bash: Linux, macOS ou Windows **via WSL** (foi no WSL2 que tudo aqui foi construído e testado; no Windows nativo, o Git Bash também serve). Tempo: uns 15 minutos.
 
 Atalho: se você clonou este repositório, `./install.sh /caminho/do/seu/projeto` executa os passos 1 a 6 de uma vez (e já copia os arquivos do passo 9). Ainda assim vale ler o passo a passo: ele explica o que cada peça faz e por quê.
 
